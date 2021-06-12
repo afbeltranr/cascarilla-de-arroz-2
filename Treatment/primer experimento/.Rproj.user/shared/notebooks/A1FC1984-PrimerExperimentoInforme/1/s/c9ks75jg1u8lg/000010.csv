@@ -1,0 +1,9 @@
+"0","corrected <- as.data.frame(spc3[1:31])"
+"0","corrected <- as.data.frame(corrected[,1])"
+"2","Warning in gzfile(file, ""wb"") :"
+"2","
+ "
+"2"," cannot open compressed file 'C:/Users/USUARIO/Documents/GitHub/Cascarilla de arroz - Copy/Cascarilla-de-arroz/Cascarilla de arroz/Treatment/primer experimento/.Rproj.user/shared/notebooks/A1FC1984-PrimerExperimentoInforme/1/55FEFCEBB522323B/c9ks75jg1u8lg_t/684cc674888948c3b64fda535d9b2329.snapshot', probable reason 'No such file or directory'
+"
+"2","Error in gzfile(file, ""wb"") : cannot open the connection
+"

@@ -1,0 +1,4 @@
+"0","data <- rbind(promUpper,promLower)"
+"0","rownames(data)[1:15] <- rownames(promUpper)"
+"0","rownames(data)[16:31] <- rownames(promLower)"
+"0",""

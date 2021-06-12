@@ -1,0 +1,3 @@
+"0","absorbances <- lapply(spectra, '[' , 2)"
+"0","absorbances <- as.data.frame(absorbances) # convert list of data.frames to one data.frame"
+"0","absorbances <- t(absorbances) #arrange variables in columns and subjects in rows"

@@ -1,0 +1,3 @@
+"0","searchGridUpper <-  expand.grid(Temperature = c('Room T','50C'),"
+"0","                         Time = c('2 min', '4 min' , '6 min', '8 min'),"
+"0","                         Treatment =c('A','B'))"

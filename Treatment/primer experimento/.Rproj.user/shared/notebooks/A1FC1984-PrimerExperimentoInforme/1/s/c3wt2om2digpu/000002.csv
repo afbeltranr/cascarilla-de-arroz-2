@@ -1,0 +1,3 @@
+"0","indexUpper <- which(grepl('(?=.*@)', rownames(absorbances), perl = T))"
+"0",""
+"0","Upper <- absorbances[indexUpper,]"

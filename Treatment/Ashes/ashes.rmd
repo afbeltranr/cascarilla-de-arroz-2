@@ -1,0 +1,76 @@
+---
+title: "Ashes content analysis"
+author: "Maria Candelaria Dorta Delgado- Andres Felipe Beltran"
+date: "5/27/2021"
+output: 
+  rmdformats::downcute
+  
+---
+In this document we can see the statistical analysis applied to the investigation question: Are there significative differences in ash content between several groups of rice husk samples?
+
+#Ashes 1: Difference between no treatment and water decantation at different temperatures.
+
+Since there are 8 samples in `control.group` And 8 samples in the `treatment.group` we can use the function `t.test` to do a comparison test and see if there is a statistical difference between the ash content in these two groups as follows:
+
+* First, we define `control.group`:
+
+```{r}
+control.group <- c(18.62, 17.51,18.19,17.62,18.58,17.69,17.62,17.38)
+```
+
+Then, we define `treatment.group` as the lower fraction since is the fraction that has the same sample size and from which we have the most information :
+
+```{r}
+treatment.group <- c(15,14,16,13,15,14,11,13)
+```
+
+
+
+
+Now we can compare the means of these grups using the `t.test()` function:
+
+```{r}
+t.test(control.group, treatment.group)
+```
+
+We can create a group with the samples taken from the upper fraction of the tube:
+
+
+```{r}
+upper.fraction <- c(15,15,12,11,10)
+```
+
+
+Also, within the `treatment.group` we can compare between density fractions as follows:
+
+```{r}
+t.test(treatment.group, upper.fraction)
+```
+
+# Ashes 2
+
+2-4 min:
+
+```{r}
+U2.4 <- c(12.63,12.36, 13.87, 13.87, 13.62, 13.79)
+L2.4 <- c(10.96,11.11, 10.86, 10.48, 10.66, 13.79)
+t.test(U2.4, L2.4)
+```
+6-8 min:
+
+```{r}
+U6.8 <- c(14.01,13.81,13.33,14.09,12.65)
+L6.8 <- c(10.38, 9.83,9.79, 10.67, 10.38)
+t.test(U6.8,L6.8)
+```
+Para revisar entre tiempos de molienda, puede evaluarse la diferencia entre las medias manteniendo la fraccion constante:
+
+```{r}
+t.test(U2.4, U6.8)
+```
+```{r}
+t.test(L2.4, L6.8)
+```
+A un nivel de significancia $\alpha = 0.05$ se puede afirmar mediante la prueba de t, que hay una diferencia significativa en la media del contenido de cenizas entre grupos de distintas fracciones (superior e inferior). En otras palabras esta diferencia en contenido de cenizas se da por la diferencia entre los grupos de muestras, y no por azar.
+
+Por otro lado, para diferenciar entre tiempos de molienda de 2-4 min y de 6-8 min en un nivel de significancia $\alpha = 0.05$ ninguna de las dos fracciones presenta diferencia significativa.

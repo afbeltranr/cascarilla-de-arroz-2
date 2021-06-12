@@ -1,0 +1,2 @@
+"0","library(hyperSpec)"
+"0","spc <- new('hyperSpec', spc = data, wavelength = wn)"

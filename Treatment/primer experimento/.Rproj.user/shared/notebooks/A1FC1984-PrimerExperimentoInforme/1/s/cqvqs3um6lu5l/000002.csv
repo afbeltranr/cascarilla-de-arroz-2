@@ -1,0 +1,2 @@
+"0","colnames(absorbances) <- wn"
+"0","rownames(absorbances) <- names"

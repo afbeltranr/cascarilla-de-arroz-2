@@ -1,0 +1,7 @@
+"0","searchGridUpper <- searchGridUpper[-c(11),]"
+"0","dim(searchGridUpper)"
+"1","[1]"
+"1"," 15"
+"1","  3"
+"1","
+"

@@ -1,0 +1,7 @@
+"2","Warning in gzfile(file, ""wb"") :"
+"2","
+ "
+"2"," cannot open compressed file 'C:/Users/USUARIO/Documents/GitHub/Cascarilla de arroz - Copy/Cascarilla-de-arroz/Cascarilla de arroz/Treatment/primer experimento/.Rproj.user/shared/notebooks/A1FC1984-PrimerExperimentoInforme/1/55FEFCEBB522323B/ctvo4xypub2j8_t/13fec08fc04c414597c7770c999ef01b.snapshot', probable reason 'No such file or directory'
+"
+"2","Error in gzfile(file, ""wb"") : cannot open the connection
+"

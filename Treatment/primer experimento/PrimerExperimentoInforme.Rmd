@@ -1,0 +1,633 @@
+---
+title: 'First Experiment: Data treatment'
+author: "Maria Candelaria Dorta Delgado-Felipe Beltran"
+date: "6/9/2021"
+output:
+  rmdformats::downcute
+---
+
+# Introduction
+
+In this document, we load several spectra from the first experiment with rice hush, variating milling time, temperature and sampling fraction.
+
+# Loading data into `R`
+
+First of all, we create a list called `names` which contains the filenames of all `.CSV` files in this folder:
+
+```{r setup, include=FALSE}
+names <- list.files(pattern = '.CSV')
+```
+
+Now, we can import each of these files information, telling `R` where the file is (the file names saved in each position of the list `names`) and telling `R` that we want to use the function `read.csv` for each file in this folder.
+
+```{r}
+spectra <- lapply(names, read.csv, header = F)
+```
+
+Now, we create a vector which will contain the frequencies of incident light of all spectra, since all spectra were recorded at the same range of frequencies, we can use one for all of them.
+
+```{r}
+wn <- spectra[[1]][,1]
+```
+
+Now we can save just the absorbances in the object `absorbances` by selecting the second column of each `data.frame` contained in each position of the list `spectra`.
+
+```{r}
+absorbances <- lapply(spectra, '[' , 2)
+absorbances <- as.data.frame(absorbances) # convert list of data.frames to one data.frame
+absorbances <- t(absorbances) #arrange variables in columns and subjects in rows
+```
+
+Then we can use proper names for columns (frequencies) and rows (samples)
+
+```{r} 
+colnames(absorbances) <- wn
+rownames(absorbances) <- names
+```
+
+# estimating the mean spectra of each sample.
+
+ 
+## Upper and lower part samples.
+ 
+ We can use a search algorithm of two steps:
+ 
+  1. difference samples from upper fraction and lower fraction, using `@`.
+  2. for each fraction, crate a search grid with the combinations of names (variables of treatment, such as temperature ,milling time and day of sampling .)
+  
+At this moment, all samples have a `@` in their name. we can search for those ones with As and Bs at the end of their name and remove the `@` as follows:
+
+```{r}
+for(i in 1:length(rownames(absorbances))){
+  
+  if(grepl('(?=.*_A|_ A|_B|_ B)',
+           rownames(absorbances)[i],
+           perl = T)){rownames(absorbances)[i] <- sub('@','',rownames(absorbances)[i])}else{}
+  
+}
+
+rownames(absorbances)
+```
+
+Now, we have a prior differentiation between samples of the upper half of the pellet, and samples from the lower part of the pellet.
+
+
+## Calculating the mean spectra for upper part
+
+First we crate a subset of the spectra of the samples that come from the upper part of the pellets:
+ 
+```{r}
+indexUpper <- which(grepl('(?=.*@)', rownames(absorbances), perl = T))
+
+Upper <- absorbances[indexUpper,]
+```
+
+Now we can crate a search matrix, o a search grid with all the possible combinations for the names of this fraction:
+
+```{r}
+searchGridUpper <-  expand.grid(Temperature = c('Room T','50C'),
+                         Time = c('2 min', '4 min' , '6 min', '8 min'),
+                         Treatment =c('A','B'))
+```
+
+
+Now we can create the new names for the averaged spectra and store them in a character vector:
+
+```{r}
+rownames.prom.Upper <- character(16)
+
+
+for (i in 1:16){
+rownames.prom.Upper[i] <- paste('@',searchGridUpper[i,1],searchGridUpper[i,2],searchGridUpper[i,3])  
+  
+}
+
+rownames.prom.Upper
+rownames.prom.Upper <- rownames.prom.Upper[-c(11)]
+```
+
+Once we have the names we will search for, we can search where they are in the  `Upper` matrix and use this position to calculate the mean:
+
+* First, we create a matrix to store the mean spectra:
+
+```{r}
+promUpper <- matrix(
+               ncol= ncol(Upper), 
+               nrow = 15)
+index.rep.Upper <- vector('list',15)
+```
+
+Now, in this set of experiments where was not a sample for the variation: B Room T 4 min. So we have to delete this search from the search grid:
+
+```{r}
+searchGridUpper[11,]
+searchGridUpper <- searchGridUpper[-c(11),]
+dim(searchGridUpper)
+```
+
+```{r}
+for(i in 1:15)for(i in 1:15){
+  
+  index.rep.Upper[[i]] <- c(which(grepl(paste0('(?=.*',
+                                      as.character(searchGridUpper[i,1]),
+                                      ')(?=.*',
+                                      as.character(searchGridUpper[i,2]),
+                                      ')(?=.*',
+                                       as.character(searchGridUpper[i,3]),
+                                      ')'
+                                        ) ,
+                              rownames(Upper), 
+                              perl = T))
+                  )
+}
+```
+
+Since there are just 2 replicates for variation: `Room T 4 min A` we have to use a conditional flow control structure to calculate means:
+
+```{r}
+for(i in 1:15){
+  for(j in 1:length(colnames(Upper))){
+    
+    
+  if(length(index.rep.Upper[[i]])==2){
+    
+  promUpper[i,j] <- mean(c(Upper[index.rep.Upper[[i]][1],j],
+                    Upper[index.rep.Upper[[i]][2],j]
+                      ) )  
+  }else{
+    
+    promUpper[i,j] <- mean(c(Upper[index.rep.Upper[[i]][1],j],
+                    Upper[index.rep.Upper[[i]][2],j],
+                    Upper[index.rep.Upper[[i]][3],j]
+                      ) )
+  }
+  
+  } 
+}
+
+rownames(promUpper) <- rownames.prom.Upper
+colnames(promUpper) <- wn
+```
+
+
+
+
+## Calculating the mean spectra for lower part
+
+First we crate a subset of the spectra of the samples that come from the lower part of the pellets:
+ 
+```{r}
+indexLower <- which(grepl('^((?!@).)*$', rownames(absorbances), perl = T))
+
+Lower <- absorbances[indexLower,]
+```
+
+
+
+Then we create a search grid for every possible combination of experimental variables:
+
+```{r}
+searchGridLower <-  expand.grid(Temperature = c('Room T','50C'),
+                         Time = c('2 min', '4 min' , '6 min', '8 min'),
+                         Treatment =c('A','B'))
+```
+
+Now, we create the new names for the averaged spectra and store them in a character vector:
+
+```{r}
+rownames.prom.Lower <- character(16)
+
+
+for (i in 1:16){
+rownames.prom.Lower[i] <- paste(searchGridLower[i,1],searchGridLower[i,2],searchGridLower[i,3])  
+  
+}
+
+rownames.prom.Lower
+```
+Once we have the names we will search for, we can search where they are in the `upper` matrix and use this position to calculate the mean:
+
+* First, we create a matrix to store the mean spectra:
+
+```{r}
+promLower <- matrix(
+               ncol= ncol(Lower), 
+               nrow = nrow(Lower)/3)
+index.rep.Lower <- vector('list',16)
+```
+
+* Then, we execute the search, and save where are each triad of spectra corresponding to each sample:
+
+```{r}
+for(i in 1:16)for(i in 1:16){
+  
+  index.rep.Lower[[i]] <- c(which(grepl(paste0('(?=.*',
+                                      as.character(searchGridLower[i,1]),
+                                      ')(?=.*',
+                                      as.character(searchGridLower[i,2]),
+                                      ')(?=.*',
+                                       as.character(searchGridLower[i,3]),
+                                      ')'
+                                        ) ,
+                              rownames(Lower), 
+                              perl = T))
+                  )
+}
+```
+
+Once we have where are each triad, we can calculate the mean spectrum for each sample:
+
+```{r}
+for(i in 1:16){
+for(j in 1:length(colnames(Lower))){
+  
+
+
+promLower[i,j] <- mean(c(Lower[index.rep.Lower[[i]][1],j],
+                    Lower[index.rep.Lower[[i]][2],j],
+                    Lower[index.rep.Lower[[i]][3],j]
+                      ) )
+
+}
+}
+rownames(promLower) <- rownames.prom.Lower
+colnames(promLower) <- wn
+```
+```{r}
+
+```
+
+## Joining the two fractions averaged spectra
+
+```{r}
+data <- rbind(promUpper,promLower)
+rownames(data)[1:15] <- rownames(promUpper)
+rownames(data)[16:31] <- rownames(promLower)
+
+```
+
+
+# plotting average spectra
+
+```{r}
+
+class <- vector('character', length = length(rownames(data)))
+
+for(i in 1:length(rownames(data)))
+{
+
+    if(
+      grepl('(?=.*@)', rownames(data)[i], perl = T)
+    ) {class[i] <- 'black'}else{
+        class[i] <- 'red'
+}
+}
+class
+```
+
+
+```{r}
+for(i in 1:length(rownames(data))){
+  plot(wn,
+       data[i,],
+       axes=F,
+        xlab = '',
+        ylab = '',
+       xlim = c(4000,400),
+       ylim = c(0,0.3),
+       type = 'l',
+       col = class[i])
+  par(new = T)
+  
+  
+}
+axis(1)
+axis(2)
+box()
+title(main="",
+    xlab=expression(paste("Wave number (cm"^"-1",")")),
+    ylab="Absorbance (a.u.)",
+)
+
+legend('topleft',
+       c('Lower fraction','Upper fraction'),
+       col = c('red','black'),
+       lty = 1,
+       bg = 'white')
+
+```
+
+
+# Data pre-treatment: range selection and baseline correction
+
+Once we have all the spectra in a tidy data set called `data`, we can get rid of instrumental noise prior to performing a statistical analysis. As noticed by liland et al. (2010) if the goal is a pretty set of spectra, visual inspection is sufficient to assess the results of baseline correction.
+
+But if the spectra are to be used in a statistical analysis, it is very important to ensure objectivity and reproducibility, so we can make better predictions. 
+
+
+## range selection
+
+We can select a spectral range containing bands due to interaction of siloxane bonds with light, such as those around $455$, $799$ and $1045 \;cm^{-1}$ (Zemnukhova 2015) and those for lignin guaiacyl and syringul groups from $1700$ to $742\; cm^{-1}$ (Heitner 2010). 
+
+* First, we can check which columns contain this spectral range: 
+
+```{r}
+colnames(data)[c(1,676)]
+```
+* Once we know which columns of the data frame we will use for the next steps, we can craete a subset as follows:
+
+```{r}
+data <- data[,1:676]
+```
+
+and save a vector containing the corresponding frequencies for our new region of interest:
+
+```{r}
+wn <- as.numeric( colnames(data)[1:676])
+```
+
+We can plot this new subset:
+
+```{r}
+for(i in 1:length(rownames(data))){
+  plot(wn,
+       data[i,],
+       axes=F,
+        xlab = '',
+        ylab = '',
+       xlim = c(1700,400),
+       ylim = c(0,0.3),
+       type = 'l',
+       col = class[i])
+  par(new = T)
+  
+  
+}
+axis(1)
+axis(2)
+box()
+title(main="",
+    xlab=expression(paste("Wave number (cm"^"-1",")")),
+    ylab="Absorbance (a.u.)",
+)
+
+legend('topleft',
+       c('Lower fraction','Upper fraction'),
+       col = c('red','black'),
+       lty = 1,
+       bg = 'white')
+```
+
+
+## Initial assessment.
+
+Based on previous random iterations, a local optimum of parameters for the correction of the baseline using the rubberband method has beendetermined, such configuration can be tested on this data set as follows:
+
+* First, we create a new `hyperSpec` object called `spc`:
+
+```{r, message=F}
+library(hyperSpec)
+spc <- new('hyperSpec', spc = data, wavelength = wn)
+```
+
+Then we can use the rubberband method to estimate the spectral baseline and perform the correction. This method was developed for spectra which show increasing background signal along the abscissa and convex hull such as that around $1100 \; cm^{-1}$.
+
+
+
+```{r}
+bend <- 0.1 * wl.eval(spc,
+                      function(x) x^6+x^5+x^4+x^3+x^2,
+                      normalize.wl=normalize01
+                      )
+# plot(bend, wl.reverse =T)
+bl <- spc.rubberband (spc+bend, noise = 1e-4, df=20) - bend
+sum <- spc+bend
+spc3 <- spc - bl
+plot(spc, wl.reverse = TRUE)
+plot(bl, add=TRUE, col=2,wl.reverse = TRUE)
+
+plot(sum,wl.reverse = TRUE)
+plot(bend, add=TRUE, col=2,wl.reverse = TRUE)
+plot(spc3,wl.reverse = TRUE)
+
+corrected <- as.data.frame(spc3[1:31])
+corrected <- as.data.frame(corrected[,1])
+```
+
+```{r}
+for(i in 1:length(rownames(corrected))){
+  plot(wn,
+       corrected[i,],
+       xlab = 'wave number cm-1',
+       ylab = 'absorbance a.u.',
+       xlim = c(1700,400),
+       ylim = c(0,0.18),
+       type = 'l',
+       col = class[i])
+  par(new = T)
+  
+  
+}
+legend('topleft',
+       c('Lower fraction','Upper fraction'),
+       col = c('red','black'),
+       lty = 1)
+```
+
+
+
+# Spectra derivatization
+
+
+```{r}
+library(prospectr)
+w2 <- 40
+sg <- matrix(ncol = ncol(corrected)-w2, nrow= nrow(corrected))
+
+sg <- as.data.frame(sg) 
+# for (i in 1:31){
+
+sg<- savitzkyGolay(X = corrected
+                        ,m = 2,
+                        p = 3,
+                        w = w2+1,
+                        delta.wav=2)
+# }
+# colnames(sg) <- colnames( savitzkyGolay(X = corregido2[1,]
+#                         ,m = 2,
+#                         p = 3,
+#                         w = w2+1,
+#                         delta.wav=2))
+rownames(sg) <- rownames(corrected)
+
+# win.graph()
+
+for(i in 1:length(rownames(sg))){
+  
+  plot(as.numeric(colnames(sg)),
+       sg[i,],
+       xlab = 'wave number cm-1',
+       ylab = '2nd derivative of abs',
+       xlim = c(1700,400),
+        ylim = c(-1e-04,1e-04),
+       type = 'l',
+       col = class[i])
+  par(new = T)
+  
+  
+}
+
+legend('topleft',
+       c('Lower fraction','Upper fraction'),
+       col = c('red','black'),
+       lty = 1)
+```
+
+
+
+# Statistical analysis 
+
+## Hierarchical clustering analysis
+
+```{r}
+library(factoextra)
+
+res.hk <-hkmeans(data, 
+                 2,
+                 hc.metric =  'minkowski')
+fviz_dend(res.hk, 
+          cex = 0.6, 
+          
+          rect = T, 
+         
+          rect_fill = TRUE 
+        )
+```
+
+
+## Classical and Robust Principal Component Analysis
+### Classical PCA - baseline correction
+
+```{r, echo = FALSE}
+class.pca <- prcomp(corrected ,scale=T, center = T)
+vp.pca <- (class.pca$sdev)^2
+
+var.pca <- vp.pca/sum(vp.pca)*100
+
+scores <- class.pca$x
+
+plot(scores[,1],
+     scores[,2],
+     pch = 19,
+     xlab = paste('PC 1 -',as.character(round(var.pca[1],2)), '%'),
+     ylab = paste('PC 2 -',as.character(round(var.pca[2],2)), '%'),
+     col = class
+     )
+abline(h = 0, v =  0, lty=2)
+legend('bottomleft',
+       c('Lower fraction','Upper fraction'),
+       col = c('red','black'),
+       pch = 19,
+       bg = 'white')
+```
+
+### Classical PCA - baseline correction and derivatization
+
+```{r echo = FALSE}
+
+class.pca <- prcomp(sg ,scale=T, center = T)
+vp.pca <- (class.pca$sdev)^2
+
+var.pca <- vp.pca/sum(vp.pca)*100
+
+scores <- class.pca$x
+
+plot(scores[,1],
+     scores[,2],
+     pch = 19,
+     xlab = paste('PC 1 -',as.character(round(var.pca[1],2)), '%'),
+     ylab = paste('PC 2 -',as.character(round(var.pca[2],2)), '%'),
+     col = class
+     )
+abline(h = 0, v =  0, lty=2)
+legend('bottomleft',
+       c('Lower fraction','Upper fraction'),
+       col = c('red','black'),
+       pch = 19,
+       bg = 'white')
+```
+
+
+### Robust PCA - baseline correction
+
+```{r}
+library(pcaPP)
+X.rpc <- PCAgrid(corrected,
+                 k=2,
+                 scale=mad)
+
+T <- X.rpc$scores
+vp.rpc <- (X.rpc$sdev)^2
+var.rpc <- vp.rpc/sum(vp.rpc)*100
+
+plot(T[,1],
+     T[,2],
+     pch = 19,
+     xlab = paste('PC 1 -',as.character(round(var.rpc[1],2)), '%'),
+     ylab = paste('PC 2 -',as.character(round(var.rpc[2],2)), '%'),
+     col = class
+     )
+abline(h = 0, v =  0, lty=2)
+legend('bottomleft',
+       c('Lower fraction','Upper fraction'),
+       col = c('red','black'),
+       pch = 19,
+       bg = 'white')
+```
+
+
+### Robust PCA - baseline correction and derivatization
+
+
+
+```{r}
+library(pcaPP)
+X.rpc <- PCAgrid(sg,
+                 k=2,
+                 scale=mad)
+
+T <- X.rpc$scores
+vp.rpc <- (X.rpc$sdev)^2
+var.rpc <- vp.rpc/sum(vp.rpc)*100
+
+plot(T[,1],
+     T[,2],
+     pch = 19,
+     xlab = paste('PC 1 -',as.character(round(var.rpc[1],2)), '%'),
+     ylab = paste('PC 2 -',as.character(round(var.rpc[2],2)), '%'),
+     col = class
+     )
+abline(h = 0, v =  0, lty=2)
+legend('bottomleft',
+       c('Lower fraction','Upper fraction'),
+       col = c('red','black'),
+       pch = 19,
+       bg = 'white')
+```
+
+
+## Evaluation and diagnosis
+
+
+Since there are a lot of noticeable variation for the results with different pre-treatments, we can search for the pre-treatment conditions that results in better quality measures, such as $Q^2$ for PCA.
+
+```{r message= FALSE}
+
+library(pcaMethods)
+resPPCA <- pca(sg, method="ppca", center=FALSE, nPcs=5)
+
+Q2(resPPCA)
+```
+
+
+

@@ -1,0 +1,7 @@
+"0","for(i in 1:length(rownames(absorbances))){"
+"0","  "
+"0","  if(grepl('(?=.*_A|_ A|_B|_ B)',"
+"0","           rownames(absorbances)[i],"
+"0","           perl = T)){rownames(absorbances)[i] <- sub('@','',rownames(absorbances)[i])}else{}"
+"0","  "
+"0","}"
